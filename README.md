@@ -18,7 +18,7 @@ AI and crypto bilingual content collection published personally. Welcome to exch
 
 **Substack:** https://open.substack.com/pub/brucemao3/p/coming-soon?r=1hi9nf&utm_campaign=post&utm_medium=web&showWelcomeOnShare=true
 
-Twitter (X): @SlimeVerse_
+**Twitter (X)**: @SlimeVerse_
 
 Content primarily includes methodology and practical summaries for using AI tools, AI learning methodologies, AI programming practice, crypto research articles, DeFi system analysis, as well as other content about life, workplace, and personal experiences.
 
