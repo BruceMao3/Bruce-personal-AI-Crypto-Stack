@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>本地卡片服务</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 15px;
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .platform {
+      background: #eee;
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 14px;
+      min-width: 70px;
+      text-align: center;
+    }
+    .title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .card-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .copy-btn, .delete-btn {
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+    .copy-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+    }
+    .copy-btn:hover {
+      background: #45a049;
+    }
+    .delete-btn {
+      background: #f44336;
+      color: white;
+      border: none;
+    }
+    .delete-btn:hover {
+      background: #d32f2f;
+    }
+    .copy-success {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      border-radius: 4px;
+      display: none;
+      z-index: 100;
+    }
+    .hidden-content {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>本地卡片服务</h1>
+  <div id="copy-notification" class="copy-success">内容已复制到剪贴板</div>
+  <div id="cards-container"></div>
+  <div id="temp-clipboard-area" class="hidden-content"></div>
+
+  <script>
+    // 加载卡片
+    function loadCards() {
+      fetch('/api/cards')
+        .then(response => response.json())
+        .then(cards => {
+          const container = document.getElementById('cards-container');
+          container.innerHTML = '';
+          
+          if (cards.length === 0) {
+            container.innerHTML = '<p>暂无卡片</p>';
+            return;
+          }
+          
+          cards.forEach(card => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            cardElement.innerHTML = `
+              <div class="card-left">
+                <span class="platform">${card.platform}</span>
+                <span class="title">${card.title}</span>
+              </div>
+              <div class="card-actions">
+                <button class="copy-btn" onclick="copyRichContent(${card.id})">复制</button>
+                <button class="delete-btn" onclick="deleteCard(${card.id})">删除</button>
+              </div>
+              <div id="content-${card.id}" class="hidden-content">${card.content}</div>
+            `;
+            container.appendChild(cardElement);
+          });
+        })
+        .catch(error => console.error('加载卡片出错:', error));
+    }
+    
+    // 复制富文本内容到剪贴板
+    function copyRichContent(id) {
+      // 获取要复制的HTML内容
+      const contentElement = document.getElementById(`content-${id}`);
+      if (!contentElement) {
+        console.error('未找到内容元素');
+        return;
+      }
+      
+      const htmlContent = contentElement.innerHTML;
+      
+      // 创建一个临时的可编辑区域
+      const tempArea = document.getElementById('temp-clipboard-area');
+      tempArea.innerHTML = htmlContent;
+      tempArea.contentEditable = true;
+      
+      // 确保元素可见（但位置在屏幕外）
+      tempArea.style.position = 'fixed';
+      tempArea.style.left = '-9999px';
+      tempArea.style.top = '0';
+      tempArea.style.opacity = '0';
+      tempArea.style.display = 'block';
+      
+      // 选择内容
+      const range = document.createRange();
+      range.selectNodeContents(tempArea);
+      
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // 尝试复制
+      let success = false;
+      try {
+        success = document.execCommand('copy');
+      } catch (err) {
+        console.error('复制失败:', err);
+      }
+      
+      // 清理
+      selection.removeAllRanges();
+      tempArea.style.display = 'none';
+      tempArea.contentEditable = false;
+      
+      // 显示复制结果
+      const notification = document.getElementById('copy-notification');
+      notification.textContent = success ? '富文本内容已复制' : '复制失败';
+      notification.style.display = 'block';
+      notification.style.backgroundColor = success ? '#4CAF50' : '#f44336';
+      
+      // 2秒后隐藏提示
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 2000);
+    }
+    
+    // 删除卡片
+    function deleteCard(id) {
+      fetch(`/api/card/${id}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            loadCards();
+          }
+        })
+        .catch(error => console.error('删除卡片出错:', error));
+    }
+    
+    // 初始加载
+    loadCards();
+    
+    // 定期刷新（每2秒）
+    setInterval(loadCards, 2000);
+  </script>
+</body>
+</html>
