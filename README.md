@@ -1,5 +1,5 @@
 
-# Bruce-personal-AI-Crypto-Stack
+# Bruce personal AI & Crypto Stack
 
 ## EN
 
